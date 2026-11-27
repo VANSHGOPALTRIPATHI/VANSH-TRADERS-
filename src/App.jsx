@@ -1,0 +1,32 @@
+import React, { useState } from 'react';
+
+const DEFAULT_PRODUCTS = [
+ {id:'sand',name:'Sand / Ret',unit:'Per trolley',price:''},
+ {id:'gitti',name:'Stone Aggregate / Gitti',unit:'Per trolley',price:''},
+ {id:'cement',name:'Cement',unit:'Per bag',price:''},
+ {id:'dust',name:'Stone / Crusher Dust',unit:'Per trolley',price:''},
+ {id:'chips',name:'Stone Chips',unit:'Per trolley',price:''},
+ {id:'other',name:'Other Building Materials',unit:'As applicable',price:''}
+];
+const DEFAULT_SETTINGS={businessName:'Vansh Traders',owner:'Balendra Tripathi',phone:'9303113644',alternatePhone:'9131724142',whatsapp:'919131724142',address:'Krishi Upaj Mandi, Paharua, Katni, Madhya Pradesh',tagline:'Building materials. Dependable supply.'};
+const read=(key,fallback)=>{try{return JSON.parse(localStorage.getItem(key))||fallback}catch{return fallback}};
+const money=v=>v===''||v==null?'Contact for latest rate':'₹'+Number(v).toLocaleString('en-IN');
+const wa=(s,msg='Hello Vansh Traders, please share your latest material rates.')=>'https://wa.me/'+(s.whatsapp||'919131724142').replace(/\D/g,'')+'?text='+encodeURIComponent(msg);
+
+export default function App(){
+ const [products,setProducts]=useState(()=>read('vt_products_v1',DEFAULT_PRODUCTS));
+ const [settings,setSettings]=useState(()=>read('vt_settings_v1',DEFAULT_SETTINGS));
+ const [page,setPage]=useState('home'),[admin,setAdmin]=useState(false),[user,setUser]=useState(''),[pass,setPass]=useState('');
+ const [tab,setTab]=useState('rates'),[notice,setNotice]=useState('');
+ const saveProducts=p=>{setProducts(p);localStorage.setItem('vt_products_v1',JSON.stringify(p));setNotice('Rates saved in this browser.');};
+ const saveSettings=s=>{setSettings(s);localStorage.setItem('vt_settings_v1',JSON.stringify(s));setNotice('Business settings saved in this browser.');};
+ const section=(title,sub)=> <div className="section-heading"><span>{sub}</span><h2>{title}</h2></div>;
+ const cards=<div className="product-grid">{products.map(p=><article className="product-card" key={p.id}><div className="product-symbol">◆</div><h3>{p.name}</h3><p>{p.unit}</p><strong>{money(p.price)}</strong><a href={wa(settings,'Hello Vansh Traders, please confirm current rate for '+p.name+'.')} target="_blank" rel="noreferrer">Enquire on WhatsApp ↗</a></article>)}</div>;
+ if(admin){
+  if(!sessionStorage.getItem('vt_admin')) return <main className="login"><form onSubmit={e=>{e.preventDefault();if(user==='admin'&&pass==='vanshtraders@katni'){sessionStorage.setItem('vt_admin','yes');setNotice('Signed in');}else setNotice('Incorrect username or password.')}}><h1>Vansh Traders Admin</h1><label>Username<input value={user} onChange={e=>setUser(e.target.value)}/></label><label>Password<input type="password" value={pass} onChange={e=>setPass(e.target.value)}/></label><button>Sign in</button>{notice&&<p>{notice}</p>}<a onClick={()=>setAdmin(false)}>Back to website</a></form></main>;
+  return <main className="admin"><aside><b>VANSH TRADERS</b><button onClick={()=>setTab('rates')}>Product rates</button><button onClick={()=>setTab('settings')}>Business settings</button><button onClick={()=>{sessionStorage.removeItem('vt_admin');setAdmin(false)}}>Sign out</button></aside><section><h1>{tab==='rates'?'Manage current rates':'Business settings'}</h1>{notice&&<p>{notice}</p>}{tab==='rates'?<><p>Enter current prices. Leave blank to show contact for latest rate.</p>{products.map((p,i)=><div className="edit-row" key={p.id}><b>{p.name}</b><input aria-label={p.name+' rate'} placeholder="Rate in ₹" value={p.price} onChange={e=>setProducts(old=>old.map((x,j)=>i===j?{...x,price:e.target.value}:x))}/><input aria-label={p.name+' unit'} value={p.unit} onChange={e=>setProducts(old=>old.map((x,j)=>i===j?{...x,unit:e.target.value}:x))}/></div>)}<button onClick={()=>saveProducts(products)}>Save rates</button></>:<><div className="settings">{Object.keys(settings).map(k=><label key={k}>{k}<input value={settings[k]||''} onChange={e=>setSettings(old=>({...old,[k]:e.target.value}))}/></label>)}</div><button onClick={()=>saveSettings(settings)}>Save settings</button></>}<p className="warning">This admin is browser-only. Changes are saved on this device and do not sync to other visitors. The frontend login is not secure authentication.</p></section></main>;
+ }
+ return <><header><a className="brand" onClick={()=>setPage('home')}>VT <span>VANSH TRADERS</span></a><nav><button onClick={()=>setPage('home')}>Home</button><button onClick={()=>setPage('products')}>Products & Rates</button><button onClick={()=>setPage('about')}>About</button><button onClick={()=>setPage('contact')}>Contact</button><a className="nav-cta" href={wa(settings)} target="_blank" rel="noreferrer">WhatsApp us ↗</a></nav></header>
+ {page==='home'?<><section className="hero"><div className="hero-content"><span>KATNI · MADHYA PRADESH</span><h1>Strong foundations.<br/><em>Reliable materials.</em></h1><p>Sand, gitti, cement and essential building materials for your next project. Get clear rates and direct support from Vansh Traders.</p><button onClick={()=>setPage('products')}>Explore products & rates →</button><a href={wa(settings)} target="_blank" rel="noreferrer">WhatsApp enquiry ↗</a></div><div className="hero-note">BUILDING TRUST<br/>SUPPLYING QUALITY</div></section><main className="container">{section('Today’s material rates','VANSH TRADERS · KATNI')}<div className="rate-list">{products.map(p=><div key={p.id}><b>{p.name}</b><span>{p.unit}</span><strong>{money(p.price)}</strong></div>)}</div>{section('Materials for every stage of construction','WHAT WE SUPPLY')}{cards}</main></>:page==='products'?<main className="container">{section('Products & current rates','MATERIAL CATALOGUE')}{cards}</main>:<main className="container">{section(page==='about'?'Grounded in trust. Focused on your build.':'Let’s talk about your requirements.',page==='about'?'ABOUT VANSH TRADERS':'CONTACT')}<p>Vansh Traders serves construction material requirements in Katni, Madhya Pradesh.</p><p>{settings.address}</p><p>{settings.owner} · {settings.phone}</p><a className="nav-cta" href={wa(settings)} target="_blank" rel="noreferrer">Send WhatsApp enquiry ↗</a></main>}
+ <footer><div><b>{settings.businessName}</b><p>{settings.tagline}</p><p>{settings.address}</p><p>Call: {settings.phone} · WhatsApp: {settings.whatsapp}</p></div><button onClick={()=>{setAdmin(true);setNotice('')}}>Admin access</button></footer><a className="float-wa" href={wa(settings)} target="_blank" rel="noreferrer">◉</a></>;
+}
